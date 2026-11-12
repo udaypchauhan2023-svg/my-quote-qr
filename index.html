@@ -1,0 +1,262 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Quote QR Studio</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 25px;
+  font-family: Arial, sans-serif;
+  background: #f4f5f7;
+  color: #202124;
+}
+
+.container {
+  max-width: 950px;
+  margin: auto;
+}
+
+header {
+  text-align: center;
+  padding: 25px;
+  background: #172554;
+  color: white;
+  border-radius: 16px;
+  margin-bottom: 25px;
+}
+
+header h1 { margin-bottom: 8px; }
+
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: 14px;
+  margin-bottom: 18px;
+  box-shadow: 0 2px 10px #0000000b;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(230px,1fr));
+  gap: 18px;
+}
+
+.quote-card {
+  background: white;
+  padding: 16px;
+  border-radius: 14px;
+  text-align: center;
+  box-shadow: 0 2px 10px #00000010;
+  overflow-wrap: anywhere;
+}
+
+.quote-card img.preview {
+  width: 100%;
+  height: 210px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.qr {
+  display: flex;
+  justify-content: center;
+  margin: 15px auto;
+}
+
+button {
+  background: #172554;
+  color: white;
+  padding: 11px 16px;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  margin: 5px;
+}
+
+button:hover { background: #334b87; }
+
+a { color: #172554; }
+
+input {
+  width: 100%;
+  padding: 12px;
+  margin: 7px 0 14px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+#imagePage {
+  display: none;
+  max-width: 650px;
+  margin: 30px auto;
+  text-align: center;
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+}
+
+#imagePage img {
+  width: 100%;
+  border-radius: 12px;
+}
+
+#message { color: #555; }
+
+</style>
+</head>
+
+<body>
+
+<div class="container" id="dashboard">
+
+<header>
+  <h1>✨ My Quote QR Studio</h1>
+  <p>Your Quotes. Your Images. Your QR Codes.</p>
+</header>
+
+<div class="card">
+  <h2>My Quote Collection</h2>
+  <p>Add your images to the GitHub images folder and update the quotes list in this code.</p>
+  <p id="message"></p>
+</div>
+
+<div class="grid" id="collection"></div>
+
+</div>
+
+<div id="imagePage">
+  <h2 id="pageTitle"></h2>
+  <img id="openedImage" alt="Your quote image">
+  <p>Made with My Quote QR Studio ❤️</p>
+</div>
+
+<script>
+
+// ADD YOUR QUOTES AND IMAGE FILES HERE
+
+const quotes = [
+  {
+    id: "quote1",
+    text: "Believe in yourself.",
+    image: "images/quote1.jpg"
+  },
+  {
+    id: "quote2",
+    text: "Your time will come.",
+    image: "images/quote2.jpg"
+  },
+  {
+    id: "quote3",
+    text: "Keep going, never stop.",
+    image: "images/quote3.jpg"
+  }
+];
+
+// QR CODE WEBSITE SETTINGS
+
+const baseURL =
+  window.location.origin + window.location.pathname;
+
+const params = new URLSearchParams(window.location.search);
+const selectedID = params.get("id");
+
+// OPEN THE SELECTED IMAGE WHEN SOMEONE SCANS QR
+
+if (selectedID) {
+
+  const selected = quotes.find(q => q.id === selectedID);
+
+  document.getElementById("dashboard").style.display = "none";
+
+  if (selected) {
+    document.getElementById("imagePage").style.display = "block";
+    document.getElementById("pageTitle").textContent = selected.text;
+    document.getElementById("openedImage").src = selected.image;
+  } else {
+    document.getElementById("imagePage").style.display = "block";
+    document.getElementById("pageTitle").textContent =
+      "Quote not found";
+  }
+
+} else {
+
+// DISPLAY ALL QUOTES AND GENERATE QR CODES
+
+  const collection = document.getElementById("collection");
+
+  quotes.forEach((quote, index) => {
+
+    const pageURL =
+      baseURL + "?id=" + encodeURIComponent(quote.id);
+
+    const card = document.createElement("div");
+    card.className = "quote-card";
+
+    const title = document.createElement("h3");
+    title.textContent = quote.text;
+
+    const preview = document.createElement("img");
+    preview.className = "preview";
+    preview.src = quote.image;
+    preview.alt = quote.text;
+
+    const qrBox = document.createElement("div");
+    qrBox.className = "qr";
+
+    const qr = new QRCode(qrBox, {
+      text: pageURL,
+      width: 180,
+      height: 180,
+      correctLevel: QRCode.CorrectLevel.H
+    });
+
+    const download = document.createElement("button");
+    download.textContent = "Download QR";
+
+    download.onclick = () => {
+      const canvas = qrBox.querySelector("canvas");
+
+      if (canvas) {
+        const link = document.createElement("a");
+        link.download = quote.id + "-QR.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      }
+    };
+
+    const openPage = document.createElement("a");
+    openPage.href = pageURL;
+    openPage.target = "_blank";
+    openPage.textContent = "Test Quote Page";
+
+    card.append(title, preview, qrBox, download, openPage);
+    collection.appendChild(card);
+
+    preview.onerror = () => {
+      preview.alt = "Upload " + quote.image + " to your repository";
+      preview.style.height = "100px";
+    };
+
+  });
+
+  if (typeof QRCode === "undefined") {
+    document.getElementById("message").textContent =
+      "QR library could not load. Check your internet connection.";
+  } else {
+    document.getElementById("message").textContent =
+      quotes.length + " quote QR codes ready to generate.";
+  }
+}
+
+</script>
+
+</body>
+</html>
